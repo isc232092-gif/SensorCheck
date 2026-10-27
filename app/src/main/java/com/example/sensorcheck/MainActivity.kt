@@ -2,23 +2,18 @@
 package com.example.sensorcheck
 
 import android.os.Bundle
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 
 import com.example.sensorcheck.data.device.AndroidDeviceRepository
 import com.example.sensorcheck.data.device.AndroidHardwareRepository
@@ -27,7 +22,6 @@ import com.example.sensorcheck.data.device.AndroidCpuDisplayRepository
 import com.example.sensorcheck.ui.device.DeviceInfoScreen
 import com.example.sensorcheck.ui.device.HardwareInfoScreen
 import com.example.sensorcheck.ui.device.CpuDisplayScreen
-
 import com.example.sensorcheck.ui.theme.SensorCheckTheme
 
 class MainActivity : ComponentActivity() {
@@ -37,37 +31,114 @@ class MainActivity : ComponentActivity() {
 
         enableEdgeToEdge()
 
-        // Obtener información real del dispositivo
+        // Información real del dispositivo Android
         val dispositivo = AndroidDeviceRepository()
             .obtenerInformacion()
 
-        // Obtener información de RAM, almacenamiento y batería
+        // RAM, almacenamiento y batería
         val hardware = AndroidHardwareRepository(
             applicationContext
         ).obtenerHardware()
 
-        // Obtener información de CPU y pantalla
+        // Procesador y pantalla
         val cpuPantalla = AndroidCpuDisplayRepository(
             applicationContext
         ).obtenerInformacion()
 
-        // Iniciar la interfaz de SensorCheck
+        // Preferencias persistentes del usuario
+        val preferencias = getSharedPreferences(
+            "sensorcheck_preferencias",
+            MODE_PRIVATE
+        )
+
         setContent {
 
-            SensorCheckTheme {
+            // Detectar el tema actual del sistema Android
+            val temaSistema = isSystemInDarkTheme()
 
-                // Control de la pantalla seleccionada
-                var pantalla by remember {
-                    mutableIntStateOf(0)
-                }
+            // Estado del modo día / noche
+            var modoOscuro by remember {
+                mutableStateOf(
+                    preferencias.getBoolean(
+                        "modo_oscuro",
+                        temaSistema
+                    )
+                )
+            }
+
+            // Mantener la pestaña al recrearse la actividad
+            var pantalla by rememberSaveable {
+                mutableIntStateOf(0)
+            }
+
+            SensorCheckTheme(
+                darkTheme = modoOscuro,
+                dynamicColor = false
+            ) {
 
                 Scaffold(
 
-                    bottomBar = {
+                    // Barra superior
+                    topBar = {
+                        Surface(
+                            color = MaterialTheme.colorScheme.surface,
+                            tonalElevation = 3.dp
+                        ) {
 
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(
+                                        start = 16.dp,
+                                        end = 8.dp
+                                    ),
+                                verticalAlignment =
+                                    Alignment.CenterVertically,
+                                horizontalArrangement =
+                                    Arrangement.SpaceBetween
+                            ) {
+
+                                Text(
+                                    text = "SensorCheck",
+                                    style = MaterialTheme
+                                        .typography.titleLarge,
+                                    color = MaterialTheme
+                                        .colorScheme.primary
+                                )
+
+                                IconButton(
+                                    onClick = {
+
+                                        // Alternar entre día y noche
+                                        modoOscuro = !modoOscuro
+
+                                        // Guardar el tema elegido
+                                        preferencias.edit()
+                                            .putBoolean(
+                                                "modo_oscuro",
+                                                modoOscuro
+                                            )
+                                            .apply()
+                                    }
+                                ) {
+                                    Text(
+                                        text = if (modoOscuro) {
+                                            "☀️"
+                                        } else {
+                                            "🌙"
+                                        },
+                                        style = MaterialTheme
+                                            .typography.titleLarge
+                                    )
+                                }
+                            }
+                        }
+                    },
+
+                    // Barra inferior de navegación
+                    bottomBar = {
                         NavigationBar {
 
-                            // Pantalla de dispositivo
                             NavigationBarItem(
                                 selected = pantalla == 0,
                                 onClick = {
@@ -81,7 +152,6 @@ class MainActivity : ComponentActivity() {
                                 }
                             )
 
-                            // Pantalla de hardware
                             NavigationBarItem(
                                 selected = pantalla == 1,
                                 onClick = {
@@ -95,7 +165,6 @@ class MainActivity : ComponentActivity() {
                                 }
                             )
 
-                            // Pantalla de CPU y pantalla
                             NavigationBarItem(
                                 selected = pantalla == 2,
                                 onClick = {
@@ -113,15 +182,17 @@ class MainActivity : ComponentActivity() {
 
                 ) { paddingValues ->
 
-                    Box(
+                    Surface(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(paddingValues)
+                            .padding(paddingValues),
+                        color = MaterialTheme
+                            .colorScheme.background
                     ) {
 
                         when (pantalla) {
 
-                            // Información general
+                            // Información del dispositivo
                             0 -> DeviceInfoScreen(
                                 info = dispositivo
                             )
