@@ -1,47 +1,77 @@
 package com.example.sensorcheck
 
+import android.graphics.Color
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.activity.viewModels
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import com.example.sensorcheck.ui.EstadoCarga
+import com.example.sensorcheck.ui.SensorCheckApp
+import com.example.sensorcheck.ui.SensorCheckViewModel
 import com.example.sensorcheck.ui.theme.SensorCheckTheme
 
 class MainActivity : ComponentActivity() {
+
+    private val viewModel: SensorCheckViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
+
+        // Debe llamarse antes de super.onCreate()
+        val splash = installSplashScreen()
+
         super.onCreate(savedInstanceState)
+
+        // El splash se mantiene solo mientras se leen los datos reales
+        splash.setKeepOnScreenCondition {
+            viewModel.estado.value is EstadoCarga.Cargando
+        }
+
         enableEdgeToEdge()
+
         setContent {
-            SensorCheckTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
+
+            val preferencia by viewModel.modoOscuro.collectAsState()
+            val estado by viewModel.estado.collectAsState()
+            val modoOscuro = preferencia ?: isSystemInDarkTheme()
+
+            // Iconos de las barras del sistema acordes al tema elegido
+            DisposableEffect(modoOscuro) {
+                enableEdgeToEdge(
+                    statusBarStyle = SystemBarStyle.auto(
+                        Color.TRANSPARENT,
+                        Color.TRANSPARENT
+                    ) { modoOscuro },
+                    navigationBarStyle = SystemBarStyle.auto(
+                        ScrimClaro,
+                        ScrimOscuro
+                    ) { modoOscuro }
+                )
+                onDispose { }
+            }
+
+            SensorCheckTheme(
+                darkTheme = modoOscuro,
+                dynamicColor = false
+            ) {
+                SensorCheckApp(
+                    estado = estado,
+                    modoOscuro = modoOscuro,
+                    onCambiarTema = { viewModel.cambiarModoOscuro(!modoOscuro) }
+                )
             }
         }
     }
-}
 
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    SensorCheckTheme {
-        Greeting("Android")
+    private companion object {
+        // Scrims usados solo en navegación por botones (Android < 10)
+        val ScrimClaro = Color.argb(0xE6, 0xFF, 0xFF, 0xFF)
+        val ScrimOscuro = Color.argb(0x80, 0x1B, 0x1B, 0x1B)
     }
 }

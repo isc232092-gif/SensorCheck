@@ -7,4 +7,10 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- Identidad SensorCheck -->
+    <color name="brand_azul_marino">#FF0B1626</color>
+    <color name="brand_turquesa">#FF2EC4B6</color>
+    <color name="brand_naranja">#FFFF9F43</color>
+    <color name="splash_background">@color/brand_azul_marino</color>
 </resources>

@@ -2,4 +2,11 @@
 <resources>
 
     <style name="Theme.SensorCheck" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <!-- Pantalla de inicio (AndroidX SplashScreen, Android 8+) -->
+    <style name="Theme.SensorCheck.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/splash_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_logo</item>
+        <item name="postSplashScreenTheme">@style/Theme.SensorCheck</item>
+    </style>
 </resources>
