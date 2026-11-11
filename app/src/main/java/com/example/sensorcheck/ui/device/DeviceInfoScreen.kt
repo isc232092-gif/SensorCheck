@@ -1,113 +1,64 @@
-
 package com.example.sensorcheck.ui.device
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import com.example.sensorcheck.domain.model.DeviceInfo
+import com.example.sensorcheck.ui.components.ContenidoPantalla
+import com.example.sensorcheck.ui.components.DatoInfo
+import com.example.sensorcheck.ui.components.GrupoInfo
+import com.example.sensorcheck.ui.components.TarjetaPrincipal
+import com.example.sensorcheck.ui.components.TituloSeccion
 
 @Composable
 fun DeviceInfoScreen(info: DeviceInfo) {
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
+    ContenidoPantalla {
 
-        Text(
-            text = "SensorCheck",
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.primary
-        )
-
-        Text(
-            text = "Información del dispositivo",
-            style = MaterialTheme.typography.titleLarge
-        )
-
-        DeviceItem(
-            titulo = "Fabricante",
-            valor = info.fabricante
-        )
-
-        DeviceItem(
-            titulo = "Marca",
-            valor = info.marca
-        )
-
-        DeviceItem(
-            titulo = "Modelo",
-            valor = info.modelo
-        )
-
-        DeviceItem(
-            titulo = "Nombre del dispositivo",
-            valor = info.dispositivo
-        )
-
-        DeviceItem(
-            titulo = "Versión de Android",
-            valor = info.versionAndroid
-        )
-
-        DeviceItem(
-            titulo = "Nivel de API",
-            valor = info.nivelApi.toString()
-        )
-
-        DeviceItem(
-            titulo = "Placa",
-            valor = info.placa
-        )
-
-        DeviceItem(
-            titulo = "Hardware",
-            valor = info.hardware
-        )
-
-        DeviceItem(
-            titulo = "Producto",
-            valor = info.producto
-        )
-
-        DeviceItem(
-            titulo = "Arquitecturas de CPU",
-            valor = info.arquitecturasCpu.joinToString(", ")
-        )
-    }
-}
-
-@Composable
-private fun DeviceItem(
-    titulo: String,
-    valor: String
-) {
-
-    ElevatedCard(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-
-            Text(
-                text = titulo,
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary
+        item {
+            TarjetaPrincipal(
+                icono = Icons.Outlined.Smartphone,
+                etiqueta = info.fabricante,
+                titulo = info.modelo,
+                subtitulo = "Android ${info.versionAndroid} · API ${info.nivelApi}"
             )
+        }
 
-            Text(
-                text = valor.ifBlank { "No disponible" },
-                style = MaterialTheme.typography.titleMedium
+        item { TituloSeccion("Identificación") }
+        item {
+            GrupoInfo(
+                listOf(
+                    DatoInfo(Icons.Outlined.Factory, "Fabricante", info.fabricante),
+                    DatoInfo(Icons.Outlined.Sell, "Marca", info.marca),
+                    DatoInfo(Icons.Outlined.Smartphone, "Modelo", info.modelo),
+                    DatoInfo(Icons.Outlined.Badge, "Nombre del dispositivo", info.dispositivo),
+                    DatoInfo(Icons.Outlined.Inventory2, "Producto", info.producto)
+                )
+            )
+        }
+
+        item { TituloSeccion("Software") }
+        item {
+            GrupoInfo(
+                listOf(
+                    DatoInfo(Icons.Outlined.Android, "Versión de Android", info.versionAndroid),
+                    DatoInfo(Icons.Outlined.Code, "Nivel de API", info.nivelApi.toString())
+                )
+            )
+        }
+
+        item { TituloSeccion("Plataforma") }
+        item {
+            GrupoInfo(
+                listOf(
+                    DatoInfo(Icons.Outlined.DeveloperBoard, "Placa", info.placa),
+                    DatoInfo(Icons.Outlined.Memory, "Hardware", info.hardware),
+                    DatoInfo(
+                        Icons.Outlined.Layers,
+                        "Arquitecturas compatibles",
+                        info.arquitecturasCpu.joinToString(", ")
+                    )
+                )
             )
         }
     }

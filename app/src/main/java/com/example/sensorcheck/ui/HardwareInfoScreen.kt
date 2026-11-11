@@ -1,101 +1,90 @@
-
 package com.example.sensorcheck.ui.device
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import com.example.sensorcheck.domain.model.HardwareInfo
+import com.example.sensorcheck.ui.components.ContenidoPantalla
+import com.example.sensorcheck.ui.components.DatoInfo
+import com.example.sensorcheck.ui.components.TarjetaProgreso
+import com.example.sensorcheck.ui.components.TituloSeccion
 import java.util.Locale
+
+private const val BYTES_POR_GB = 1024.0 * 1024.0 * 1024.0
 
 @Composable
 fun HardwareInfoScreen(info: HardwareInfo) {
 
-    val gb = 1024.0 * 1024.0 * 1024.0
+    val colores = MaterialTheme.colorScheme
 
-    fun formatoGB(bytes: Long): String =
-        String.format(
-            Locale.getDefault(),
-            "%.2f GB",
-            bytes / gb
-        )
+    val ramUsada = info.ramTotalBytes - info.ramDisponibleBytes
+    val almacenamientoUsado =
+        info.almacenamientoTotalBytes - info.almacenamientoDisponibleBytes
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
+    ContenidoPantalla {
 
-        Text(
-            "Hardware del dispositivo",
-            style = MaterialTheme.typography.headlineSmall
-        )
-
-        HardwareCard(
-            "Memoria RAM total",
-            formatoGB(info.ramTotalBytes)
-        )
-
-        HardwareCard(
-            "RAM disponible",
-            formatoGB(info.ramDisponibleBytes)
-        )
-
-        HardwareCard(
-            "Almacenamiento total",
-            formatoGB(info.almacenamientoTotalBytes)
-        )
-
-        HardwareCard(
-            "Almacenamiento disponible",
-            formatoGB(info.almacenamientoDisponibleBytes)
-        )
-
-        HardwareCard(
-            "Nivel de batería",
-            info.bateriaPorcentaje?.let { "$it%" }
-                ?: "No disponible"
-        )
-
-        HardwareCard(
-            "Temperatura de batería",
-            info.bateriaTemperaturaC?.let { "$it °C" }
-                ?: "No disponible"
-        )
-
-        HardwareCard(
-            "Voltaje de batería",
-            info.bateriaVoltajeMv?.let { "$it mV" }
-                ?: "No disponible"
-        )
-    }
-}
-
-@Composable
-private fun HardwareCard(
-    titulo: String,
-    valor: String
-) {
-    ElevatedCard(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Text(
-                titulo,
-                style = MaterialTheme.typography.labelLarge
+        item { TituloSeccion("Memoria") }
+        item {
+            TarjetaProgreso(
+                icono = Icons.Outlined.Memory,
+                titulo = "RAM en uso",
+                fraccion = fraccion(ramUsada, info.ramTotalBytes),
+                detalle = "${formatoGB(ramUsada)} usados de ${formatoGB(info.ramTotalBytes)}",
+                color = colores.primary,
+                datosAdicionales = listOf(
+                    DatoInfo(Icons.Outlined.Memory, "RAM total", formatoGB(info.ramTotalBytes)),
+                    DatoInfo(Icons.Outlined.CheckCircleOutline, "RAM disponible", formatoGB(info.ramDisponibleBytes))
+                )
             )
-            Spacer(Modifier.height(6.dp))
-            Text(
-                valor,
-                style = MaterialTheme.typography.titleMedium
+        }
+
+        item { TituloSeccion("Almacenamiento interno") }
+        item {
+            TarjetaProgreso(
+                icono = Icons.Outlined.Storage,
+                titulo = "Almacenamiento en uso",
+                fraccion = fraccion(almacenamientoUsado, info.almacenamientoTotalBytes),
+                detalle = "${formatoGB(almacenamientoUsado)} usados de " +
+                    formatoGB(info.almacenamientoTotalBytes),
+                color = colores.secondary,
+                datosAdicionales = listOf(
+                    DatoInfo(Icons.Outlined.Storage, "Almacenamiento total", formatoGB(info.almacenamientoTotalBytes)),
+                    DatoInfo(Icons.Outlined.CheckCircleOutline, "Almacenamiento disponible", formatoGB(info.almacenamientoDisponibleBytes))
+                )
+            )
+        }
+
+        item { TituloSeccion("Batería") }
+        item {
+            TarjetaProgreso(
+                icono = Icons.Outlined.BatteryStd,
+                titulo = "Nivel de batería",
+                fraccion = info.bateriaPorcentaje?.let { it / 100f },
+                detalle = null,
+                color = colores.tertiary,
+                datosAdicionales = listOf(
+                    DatoInfo(
+                        Icons.Outlined.Thermostat,
+                        "Temperatura",
+                        info.bateriaTemperaturaC?.let {
+                            String.format(Locale.getDefault(), "%.1f °C", it)
+                        }
+                    ),
+                    DatoInfo(
+                        Icons.Outlined.Bolt,
+                        "Voltaje",
+                        info.bateriaVoltajeMv?.let { "$it mV" }
+                    )
+                )
             )
         }
     }
 }
+
+/** Fracción usada/total; null si el total no es válido. */
+private fun fraccion(usado: Long, total: Long): Float? =
+    if (total > 0 && usado >= 0) usado.toFloat() / total else null
+
+private fun formatoGB(bytes: Long): String =
+    String.format(Locale.getDefault(), "%.2f GB", bytes / BYTES_POR_GB)

@@ -1,215 +1,77 @@
-
 package com.example.sensorcheck
 
+import android.graphics.Color
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-
+import androidx.activity.viewModels
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-
-import com.example.sensorcheck.data.device.AndroidDeviceRepository
-import com.example.sensorcheck.data.device.AndroidHardwareRepository
-import com.example.sensorcheck.data.device.AndroidCpuDisplayRepository
-
-import com.example.sensorcheck.ui.device.DeviceInfoScreen
-import com.example.sensorcheck.ui.device.HardwareInfoScreen
-import com.example.sensorcheck.ui.device.CpuDisplayScreen
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import com.example.sensorcheck.ui.EstadoCarga
+import com.example.sensorcheck.ui.SensorCheckApp
+import com.example.sensorcheck.ui.SensorCheckViewModel
 import com.example.sensorcheck.ui.theme.SensorCheckTheme
 
 class MainActivity : ComponentActivity() {
 
+    private val viewModel: SensorCheckViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
+
+        // Debe llamarse antes de super.onCreate()
+        val splash = installSplashScreen()
+
         super.onCreate(savedInstanceState)
+
+        // El splash se mantiene solo mientras se leen los datos reales
+        splash.setKeepOnScreenCondition {
+            viewModel.estado.value is EstadoCarga.Cargando
+        }
 
         enableEdgeToEdge()
 
-        // Información real del dispositivo Android
-        val dispositivo = AndroidDeviceRepository()
-            .obtenerInformacion()
-
-        // RAM, almacenamiento y batería
-        val hardware = AndroidHardwareRepository(
-            applicationContext
-        ).obtenerHardware()
-
-        // Procesador y pantalla
-        val cpuPantalla = AndroidCpuDisplayRepository(
-            applicationContext
-        ).obtenerInformacion()
-
-        // Preferencias persistentes del usuario
-        val preferencias = getSharedPreferences(
-            "sensorcheck_preferencias",
-            MODE_PRIVATE
-        )
-
         setContent {
 
-            // Detectar el tema actual del sistema Android
-            val temaSistema = isSystemInDarkTheme()
+            val preferencia by viewModel.modoOscuro.collectAsState()
+            val estado by viewModel.estado.collectAsState()
+            val modoOscuro = preferencia ?: isSystemInDarkTheme()
 
-            // Estado del modo día / noche
-            var modoOscuro by remember {
-                mutableStateOf(
-                    preferencias.getBoolean(
-                        "modo_oscuro",
-                        temaSistema
-                    )
+            // Iconos de las barras del sistema acordes al tema elegido
+            DisposableEffect(modoOscuro) {
+                enableEdgeToEdge(
+                    statusBarStyle = SystemBarStyle.auto(
+                        Color.TRANSPARENT,
+                        Color.TRANSPARENT
+                    ) { modoOscuro },
+                    navigationBarStyle = SystemBarStyle.auto(
+                        ScrimClaro,
+                        ScrimOscuro
+                    ) { modoOscuro }
                 )
-            }
-
-            // Mantener la pestaña al recrearse la actividad
-            var pantalla by rememberSaveable {
-                mutableIntStateOf(0)
+                onDispose { }
             }
 
             SensorCheckTheme(
                 darkTheme = modoOscuro,
                 dynamicColor = false
             ) {
-
-                Scaffold(
-
-                    // Barra superior
-                    topBar = {
-                        Surface(
-                            color = MaterialTheme.colorScheme.surface,
-                            tonalElevation = 3.dp
-                        ) {
-
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(
-                                        start = 16.dp,
-                                        end = 8.dp
-                                    ),
-                                verticalAlignment =
-                                    Alignment.CenterVertically,
-                                horizontalArrangement =
-                                    Arrangement.SpaceBetween
-                            ) {
-
-                                Text(
-                                    text = "SensorCheck",
-                                    style = MaterialTheme
-                                        .typography.titleLarge,
-                                    color = MaterialTheme
-                                        .colorScheme.primary
-                                )
-
-                                IconButton(
-                                    onClick = {
-
-                                        // Alternar entre día y noche
-                                        modoOscuro = !modoOscuro
-
-                                        // Guardar el tema elegido
-                                        preferencias.edit()
-                                            .putBoolean(
-                                                "modo_oscuro",
-                                                modoOscuro
-                                            )
-                                            .apply()
-                                    }
-                                ) {
-                                    Text(
-                                        text = if (modoOscuro) {
-                                            "☀️"
-                                        } else {
-                                            "🌙"
-                                        },
-                                        style = MaterialTheme
-                                            .typography.titleLarge
-                                    )
-                                }
-                            }
-                        }
-                    },
-
-                    // Barra inferior de navegación
-                    bottomBar = {
-                        NavigationBar {
-
-                            NavigationBarItem(
-                                selected = pantalla == 0,
-                                onClick = {
-                                    pantalla = 0
-                                },
-                                icon = {
-                                    Text("📱")
-                                },
-                                label = {
-                                    Text("Dispositivo")
-                                }
-                            )
-
-                            NavigationBarItem(
-                                selected = pantalla == 1,
-                                onClick = {
-                                    pantalla = 1
-                                },
-                                icon = {
-                                    Text("⚙")
-                                },
-                                label = {
-                                    Text("Hardware")
-                                }
-                            )
-
-                            NavigationBarItem(
-                                selected = pantalla == 2,
-                                onClick = {
-                                    pantalla = 2
-                                },
-                                icon = {
-                                    Text("▣")
-                                },
-                                label = {
-                                    Text("CPU/Pantalla")
-                                }
-                            )
-                        }
-                    }
-
-                ) { paddingValues ->
-
-                    Surface(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(paddingValues),
-                        color = MaterialTheme
-                            .colorScheme.background
-                    ) {
-
-                        when (pantalla) {
-
-                            // Información del dispositivo
-                            0 -> DeviceInfoScreen(
-                                info = dispositivo
-                            )
-
-                            // RAM, almacenamiento y batería
-                            1 -> HardwareInfoScreen(
-                                info = hardware
-                            )
-
-                            // Procesador y pantalla
-                            2 -> CpuDisplayScreen(
-                                info = cpuPantalla
-                            )
-                        }
-                    }
-                }
+                SensorCheckApp(
+                    estado = estado,
+                    modoOscuro = modoOscuro,
+                    onCambiarTema = { viewModel.cambiarModoOscuro(!modoOscuro) }
+                )
             }
         }
+    }
+
+    private companion object {
+        // Scrims usados solo en navegación por botones (Android < 10)
+        val ScrimClaro = Color.argb(0xE6, 0xFF, 0xFF, 0xFF)
+        val ScrimOscuro = Color.argb(0x80, 0x1B, 0x1B, 0x1B)
     }
 }
